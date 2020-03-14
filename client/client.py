@@ -36,7 +36,7 @@ class Client:
         while True:
             try:
                 message = self.client_socket.recv(self.BUFSIZ).decode()
-                self.lock.aquire()
+                self.lock.acquire()
                 self.messages.append(message)
                 self.lock.release()
             except Exception as e:
@@ -54,7 +54,7 @@ class Client:
             self.client_socket.send(bytes(message,"utf8"))
             if message == "{quit}":
                 self.client_socket.close()
-        except EXCEPTION as e:
+        except Exception as e:
             self.client_socket = socket(AF_INET,SOCK_STREAM)
             self.client_socket.connect(self.ADDR)
             print(e)
@@ -64,13 +64,12 @@ class Client:
         :returns a list of string messages
         :return: list[str]
         """
-
-        self.lock.aquire()
+        messages_copy = self.messages[:]
+        self.lock.acquire()
         self.messages = []
         self.lock.release()
 
-        return self.messages
-
+        return messages_copy
 
     def disconnect(self):
         self.send_message("{quit}")

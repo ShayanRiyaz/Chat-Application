@@ -44,39 +44,27 @@ def client_communication(person):
     """
     client = person.client
     #addr = person.addr
-    name = client.recv(BUFSIZ).decode("utf 8")
+    name = client.recv(BUFSIZ).decode("utf8")
+    person.set_name(name)
 
     message = bytes(f"{name} has joined the chat","utf8")
-    broadcast(message,name)
+    broadcast(message,"")
     
-    #run = True  
     while True:
-        try:
-            message = client.recv(BUFSIZ)
-            #message = person.recv(BUFSIZ)
-            print(f"{name}:" ,message.decode("utf8"))
-            if message == bytes("{quit}","utf8"):
-                #client.send(bytes("{quit}","utf8"))
-                client.close()
-                persons.remove(person)
-                broadcast(f"{name} has left the chat....","")
-                
-                print(f"[DISCONNECTED] {name} disconnected")
-                break
-            else:
-                broadcast(message,name+": ")
-                print(f"{name}: ", message.decode("utf8"))
-                break
-
-        except Exception as e:
-            print("[EXCEPTION]",e)
-            #run = False
+        message = client.recv(BUFSIZ)
+        
+        if message == bytes("{quit}","utf8"): # If message is quit disconnect client
+            client.close()
+            persons.remove(person)
+            broadcast(bytes(f"{name} has left the chat....","utf8"),"")
+        
+            print(f"[DISCONNECTED] {name} disconnected")
             break
+        else:
+            broadcast(message,name+": ")
+            print(f"{name}: ", message.decode("utf8"))
 
-    print("PERFECT")
-
-
-def wait_for_connection(SERVER):
+def wait_for_connection():
     """
     wait for connection from new clients, start new thread once connected
     Parameters:
@@ -85,25 +73,24 @@ def wait_for_connection(SERVER):
     Outputs:
     return: None
     """
-    run = True
     while True:
         try:
             client, addr = SERVER.accept()
             person = Person(addr, client)
             persons.append(person)
+
             print(f"[CONNECTION] {addr} connection to the server at time {time.time()} ")
             Thread(target = client_communication, args =(person,)).start()
         except Exception as e:
-            print("[FAILURE TO RUN]")
-            run = False
-            #break
+            print("[EXCEPTION]",e)
+            break
     print("SERVER CRASHED")
 
 
 if __name__ == "__main__":
     SERVER.listen(MAX_CONNECTIONS) # listen for connections
     print("[STARTED] Waiting for the connection...")
-    ACCEPT_THREAD = Thread(target = wait_for_connection, args = (SERVER,))
+    ACCEPT_THREAD = Thread(target = wait_for_connection)
     ACCEPT_THREAD.start()
     ACCEPT_THREAD.join()
     SERVER.close()
